@@ -1,10 +1,43 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import MainPageLayout from '../components/MainPageLayout';
+import ShowGrid from '../components/show/ShowGrid';
+import { apiGet } from '../misc/config';
+import { useShow } from '../misc/custom-hook';
 
 const Starred = () => {
+  const [starred] = useShow();
+
+  const [shows, setShows] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (starred && starred.length > 0) {
+      const promises = starred.map(showId => apiGet(`/shows/${showId}`));
+
+      Promise.all(promises)
+        .then(apiData => apiData.map(show => ({ show })))
+        .then(results => {
+          console.log(`results`, results);
+
+          setShows(results);
+          setIsLoading(false);
+        })
+        .catch(err => {
+          setError(err.message);
+          setIsLoading(false);
+        });
+    } else {
+      setIsLoading(false);
+    }
+  }, [starred]);
+
   return (
     <MainPageLayout>
-      <h3>Welcome to the Starred-Page</h3>
+      {isLoading && <div>Shows are still loading</div>}
+      {error && <div>Error Occured</div>}
+      {!isLoading && !shows && <div>No shows were added</div>}
+      {!isLoading && !error && shows && <ShowGrid data={shows} />}
     </MainPageLayout>
   );
 };
